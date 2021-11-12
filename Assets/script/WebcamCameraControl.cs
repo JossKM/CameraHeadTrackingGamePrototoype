@@ -17,6 +17,7 @@ public class WebcamCameraControl : MonoBehaviour
     UdpClient client;         // UDP client
     int port;                 // port of IP
 
+    public float lerpSpeed = 0.1f;
 
     public float camScale = 0.01f;
 
@@ -33,8 +34,10 @@ public class WebcamCameraControl : MonoBehaviour
     public float ryOffset = 0;
     public float rxOffset = 0;
     public float rzOffset = 0;
-    // 2. InitUDP
 
+    public Vector3 smoothedPosition;
+
+    // 2. InitUDP
     private void InitUDP()
     {
         receiveThread = new Thread(new ThreadStart(ReceiveData));  // init thread 
@@ -43,10 +46,10 @@ public class WebcamCameraControl : MonoBehaviour
     }
 
     // 3. Receive Data
-
     private void ReceiveData()
     {
         client = new UdpClient(port);                             // bind port
+        //client.Connect();
         while (true)
         {
             try
@@ -62,27 +65,24 @@ public class WebcamCameraControl : MonoBehaviour
                 //rx = BitConverter.ToDouble(bytes, 32);
                 //rz = BitConverter.ToDouble(bytes, 40);
 
-                //ry = 360.0f + (float)BitConverter.ToDouble(bytes, 0);
-                //rx = 360.0f + -(float)BitConverter.ToDouble(bytes, 8);
-                //rz = 360.0f + 0;//(float)BitConverter.ToDouble(bytes, 16);
-                //
+                //ry = 360.0f + -(float)BitConverter.ToDouble(bytes, 24);
+                //rx = 360.0f + (float)BitConverter.ToDouble(bytes, 32);
+                //rz = 0;//(float)BitConverter.ToDouble(bytes, 16);
                 //ry = Mathf.Repeat(ry, 360.0f);
                 //rx = Mathf.Repeat(rx, 360.0f);
                 //rz = Mathf.Repeat(rz, 360.0f);
 
-                pX = -(float)BitConverter.ToDouble(bytes, 0);
-                pY = -(float)BitConverter.ToDouble(bytes, 8);
+                pX = (float)BitConverter.ToDouble(bytes, 0);
+                pY = (float)BitConverter.ToDouble(bytes, 8);
                 pZ = (float)BitConverter.ToDouble(bytes, 16);
 
                 // Apply offsets
                 pX += pXOffset;
                 pY += pYOffset;
                 pZ += pZOffset;
-                ry += ryOffset;
-                rx += rxOffset;
-                rz += rzOffset;
-
-                //Ensure -60 is the same as 30
+                //ry += ryOffset;
+                //rx += rxOffset;
+                //rz += rzOffset;
             }
             catch (Exception e)
             {
@@ -96,8 +96,8 @@ public class WebcamCameraControl : MonoBehaviour
     void Start()
     {
         av = gameObject.GetComponent<Transform>();                                      // get Transform obj
-        baseTransform = av.localToWorldMatrix;
-        port = 6262;                                                                    // set port
+       // baseTransform = av.localToWorldMatrix;
+        port = 4242;                                                                    // set port
         ry = 0;                                                                         // init rotate angle on Y axis 
         rx = 0;                                                                         // init rotate angle on X axis 
         rz = 0;
@@ -106,6 +106,12 @@ public class WebcamCameraControl : MonoBehaviour
         pZ = 0;
 
         InitUDP();                                                                      // init UDP
+    }
+
+    void OnDestroy()
+    {
+        receiveThread.Abort();
+        client.Close();
     }
 
     void SetZeroes()
@@ -126,9 +132,11 @@ public class WebcamCameraControl : MonoBehaviour
             SetZeroes();
         }
 
-
-        Quaternion rot = Quaternion.Euler((float)rx, (float)ry, (float)rz);   // control avatar with rotation angle on X,Y axis
-        av.rotation = rot;//Quaternion.Lerp(av.rotation, rot, 0.05f);
-        av.position = baseTransform.MultiplyVector(new Vector3((float)pX * camScale, (float)pY * camScale, (float)pZ * camScale));
+        smoothedPosition = Vector3.Lerp(smoothedPosition, new Vector3((float)pX * camScale, (float)pY * camScale, (float)pZ * camScale), lerpSpeed);
+      //
+      // Quaternion rot = Quaternion.Euler((float)rx, (float)ry, (float)rz);   // control avatar with rotation angle on X,Y axis
+      // av.localRotation = Quaternion.Lerp(av.localRotation, rot, lerpSpeed);
+      //
+       av.localPosition = smoothedPosition;
     }
 }
