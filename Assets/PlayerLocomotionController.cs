@@ -21,13 +21,19 @@ public class PlayerLocomotionController : MonoBehaviour
     [SerializeField] private Sprite cursorSpriteCanPickup;
     [SerializeField] private Sprite cursorSpriteClick;
 
-    [Header("Aim")]
-    [SerializeField] private GameObject camera;
-
-    [SerializeField] private float elevationAngle = 0.0f;
-    [SerializeField] private float azimuthAngle = 0.0f;
+    [Header("Aim")] 
+    [SerializeField] private bool shooterStyleMouseAim = true;
+    [SerializeField] private GameObject cameraOrigin;
+    [SerializeField] private float cameraElevationAngle = 0.0f;
+    [SerializeField] private float bodyAzimuthAngle = 0.0f;
     [SerializeField] private float aimSpeedHorizontal = 30.0f;
     [SerializeField] private float aimSpeedVertical = 20.0f;
+
+    [Header("Headlook")]
+    [SerializeField] private GameObject headTrackedCamera;
+    [SerializeField] private AnimationCurve horizontalHeadLookCurve;
+    [SerializeField] private float horizontalHeadLookMaxAngle = 40.0f;
+    [SerializeField] private float headLookAzimuthSpeed = 10.0f;
 
     [Header("Movement")]
     [SerializeField] private float moveSpeed = 1.0f;
@@ -50,10 +56,12 @@ public class PlayerLocomotionController : MonoBehaviour
     // Start is called before the first frame update
     void Start()
     {
+        cameraOrigin.transform.rotation = Quaternion.identity;
+         
         // rb = GetComponent<Rigidbody>();
         controller = GetComponent<CharacterController>();
-        elevationAngle = camera.transform.localEulerAngles.x;
-        azimuthAngle = transform.localEulerAngles.y;
+        cameraElevationAngle = cameraOrigin.transform.localEulerAngles.x;
+        bodyAzimuthAngle = transform.localEulerAngles.y;
         Cursor.visible = false;
     }
 
@@ -61,15 +69,41 @@ public class PlayerLocomotionController : MonoBehaviour
     // Update is called once per frame
     void Update()
     {
+        HeadLook();
         MouseAim();
         Movement();
+
+        transform.localEulerAngles = new Vector3(transform.localEulerAngles.x, bodyAzimuthAngle, transform.localEulerAngles.z);
+        cameraOrigin.transform.localEulerAngles = new Vector3(cameraElevationAngle, 0, 0);
+    }
+
+    void HeadLook()
+    {
+        float trackedCameraAzimuth = Mathf.Repeat(headTrackedCamera.transform.localEulerAngles.y + 720.0f, 360.0f);
+
+        if (trackedCameraAzimuth > 180.0f)
+        {
+            trackedCameraAzimuth -= 360.0f;
+        }
+
+        float normalizedAzimuth = Mathf.Abs(trackedCameraAzimuth) / horizontalHeadLookMaxAngle;
+        float rotationInput = horizontalHeadLookCurve.Evaluate(normalizedAzimuth);
+        if (rotationInput > 0.0f)
+        {
+            bodyAzimuthAngle = bodyAzimuthAngle + rotationInput * headLookAzimuthSpeed * Time.deltaTime * Mathf.Sign(trackedCameraAzimuth);
+        }
     }
 
     void Movement()
     {
         float inputX = Input.GetAxis("Horizontal");
         float inputY = Input.GetAxis("Vertical");
-        Vector3 movement = transform.TransformVector(new Vector3(inputX, 0, inputY) * moveSpeed);
+
+        Quaternion cameraRotation = headTrackedCamera.transform.rotation;
+        cameraRotation.eulerAngles = Vector3.Scale(cameraRotation.eulerAngles, new Vector3(0.0f, 1.0f, 0.0f));
+        Vector3 movement = cameraRotation * new Vector3(inputX, 0, inputY) * moveSpeed;
+
+            //headTrackedCamera.transform.TransformVector();
         velocity = new Vector3(movement.x, velocity.y, movement.z);
         Vector2 horizontalMove = new Vector2(velocity.x, velocity.z);
         Vector2.ClampMagnitude(horizontalMove, maxMoveSpeedHorizontal);
@@ -77,9 +111,9 @@ public class PlayerLocomotionController : MonoBehaviour
 
         if (!isGrounded)
         {
-            Ray groundCheck = new Ray(transform.position + Vector3.up * groundTolerance * 0.5f, Vector3.down);
+            Ray groundCheck = new Ray(transform.position + controller.center, Vector3.down);
 
-            if (Physics.Raycast(groundCheck, groundTolerance))
+            if (Physics.Raycast(groundCheck, groundTolerance + controller.height*0.5f))
             {
                 coyoteTimeRemaining = coyoteTimeDuration;
             }
@@ -88,7 +122,7 @@ public class PlayerLocomotionController : MonoBehaviour
 
         coyoteTimeRemaining -= Time.deltaTime;
         isGrounded = coyoteTimeRemaining > 0.0f;
-
+        
         if (isGrounded)
         {
             velocity = new Vector3(velocity.x, 0, velocity.z);
@@ -119,34 +153,39 @@ public class PlayerLocomotionController : MonoBehaviour
 
     void MouseAim()
     {
-        bool mouseAim = Input.GetMouseButton(1); ;
         cursorSprite.sprite = cursorSpriteNormal;
 
         //Aim
-        float aimX = 0;
-        float aimY = 0;
+        float aimX = Input.GetAxis("Mouse X");
+        float aimY = Input.GetAxis("Mouse Y");
 
-        cursorSprite.transform.position = Input.mousePosition;
+        if (shooterStyleMouseAim)
+        {
+            Cursor.lockState = CursorLockMode.Locked;
+            cursorSprite.transform.position = new Vector3(Screen.width/2, Screen.height/2, 0);
+            bodyAzimuthAngle += aimX * aimSpeedHorizontal * Time.deltaTime;
+            cameraElevationAngle += -aimY * aimSpeedVertical * Time.deltaTime;
+        }
+        else
+        {
+            Cursor.lockState = CursorLockMode.None;
+            cursorSprite.transform.position = Input.mousePosition;
+        }
 
-        if (mouseAim)
+        if (Input.GetMouseButton(2))
+        {
+            aimX = Input.GetAxis("Mouse X");
+            bodyAzimuthAngle += aimX * aimSpeedHorizontal * Time.deltaTime;
+        }
+
+        if (Input.GetMouseButton(1))
         {
             cursorSprite.sprite = cursorSpritePan;
-            //Cursor.lockState = CursorLockMode.Locked;
-
-            aimX = Input.GetAxis("Mouse X");
-            aimY = Input.GetAxis("Mouse Y");
-            azimuthAngle += aimX * aimSpeedHorizontal * Time.deltaTime;
-            elevationAngle = Mathf.Clamp(elevationAngle - aimY * aimSpeedVertical * Time.deltaTime, -89.999f, 89.999f);
-
-            transform.localEulerAngles = new Vector3(transform.localEulerAngles.x, azimuthAngle, transform.localEulerAngles.z);
-            camera.transform.localEulerAngles = new Vector3(elevationAngle, camera.transform.localEulerAngles.y, camera.transform.localEulerAngles.z);
+            bodyAzimuthAngle += aimX * aimSpeedHorizontal * Time.deltaTime;
+            cameraElevationAngle = cameraElevationAngle - aimY * aimSpeedVertical * Time.deltaTime;
         }
-        //else
-        //{
-        //    Cursor.lockState = CursorLockMode.None;
-        //}
 
-        Ray ray = Camera.main.ScreenPointToRay(Input.mousePosition);
+        Ray ray = Camera.main.ScreenPointToRay(cursorSprite.transform.position);
         RaycastHit hit;
         bool canPickup = Physics.Raycast(ray, out hit, selectionRange, pickupsMask);
         if (canPickup)
@@ -168,5 +207,7 @@ public class PlayerLocomotionController : MonoBehaviour
                 }
             }
         }
+
+        cameraElevationAngle = Mathf.Clamp(cameraElevationAngle, -89.99f, 89.99f);
     }
 }

@@ -61,16 +61,16 @@ public class WebcamCameraControl : MonoBehaviour
                 //pX = BitConverter.ToDouble(bytes, 0);
                 //pY = BitConverter.ToDouble(bytes, 8);
                 //pZ = BitConverter.ToDouble(bytes, 16);
-                //ry = BitConverter.ToDouble(bytes, 24);
-                //rx = BitConverter.ToDouble(bytes, 32);
-                //rz = BitConverter.ToDouble(bytes, 40);
+                ry = (float)BitConverter.ToDouble(bytes, 24);
+                rx = (float)BitConverter.ToDouble(bytes, 32);
+                //rz = (float)BitConverter.ToDouble(bytes, 40);
 
-                //ry = 360.0f + -(float)BitConverter.ToDouble(bytes, 24);
-                //rx = 360.0f + (float)BitConverter.ToDouble(bytes, 32);
-                //rz = 0;//(float)BitConverter.ToDouble(bytes, 16);
-                //ry = Mathf.Repeat(ry, 360.0f);
-                //rx = Mathf.Repeat(rx, 360.0f);
-                //rz = Mathf.Repeat(rz, 360.0f);
+                ry = 360.0f + -(float)BitConverter.ToDouble(bytes, 24);
+                rx = 360.0f + (float)BitConverter.ToDouble(bytes, 32);
+                rz = 0;//(float)BitConverter.ToDouble(bytes, 16);
+                ry = Mathf.Repeat(ry, 360.0f);
+                rx = Mathf.Repeat(rx, 360.0f);
+                rz = Mathf.Repeat(rz, 360.0f);
 
                 pX = (float)BitConverter.ToDouble(bytes, 0);
                 pY = (float)BitConverter.ToDouble(bytes, 8);
@@ -110,7 +110,10 @@ public class WebcamCameraControl : MonoBehaviour
 
     void OnDestroy()
     {
+        if(receiveThread != null)
         receiveThread.Abort();
+
+        if(client != null)
         client.Close();
     }
 
@@ -133,10 +136,10 @@ public class WebcamCameraControl : MonoBehaviour
         }
 
         smoothedPosition = Vector3.Lerp(smoothedPosition, new Vector3((float)pX * camScale, (float)pY * camScale, (float)pZ * camScale), lerpSpeed);
-      //
-      // Quaternion rot = Quaternion.Euler((float)rx, (float)ry, (float)rz);   // control avatar with rotation angle on X,Y axis
-      // av.localRotation = Quaternion.Lerp(av.localRotation, rot, lerpSpeed);
-      //
+      
+       Quaternion rot = Quaternion.Euler((float)rx, (float)ry, (float)rz);   // control avatar with rotation angle on X,Y axis
+       av.localRotation = Quaternion.Lerp(av.localRotation, rot, lerpSpeed);
+      
        av.localPosition = smoothedPosition;
     }
 }
