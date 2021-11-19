@@ -7,8 +7,7 @@ public class WritingTextBox : MonoBehaviour
 {
         [SerializeField]
         private TMPro.TextMeshProUGUI textBox;
-
-        private string text;
+        public string text;
 
         //[SerializeField]
         private float textPromptSecondsPerCharacter = 0.01f;

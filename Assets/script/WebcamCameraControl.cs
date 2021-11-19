@@ -5,10 +5,12 @@ using System.Net;
 using System.Net.Sockets;
 using System.Threading;
 using System;
+using TMPro;
 
 public class WebcamCameraControl : MonoBehaviour
 {
-    // 1. Declare variables
+    [SerializeField]
+    private TextMeshProUGUI feedbackMessage;
 
     private Transform av;     // Transform obj
     private Matrix4x4 baseTransform;     // Calibrated zeros
@@ -20,6 +22,8 @@ public class WebcamCameraControl : MonoBehaviour
     public float lerpSpeed = 0.1f;
 
     public float camScale = 0.01f;
+
+    private bool isConnected = false;
 
     public float pX = 0;
     public float pY = 0;
@@ -48,7 +52,14 @@ public class WebcamCameraControl : MonoBehaviour
     // 3. Receive Data
     private void ReceiveData()
     {
-        client = new UdpClient(port);                             // bind port
+        try
+        {
+            client = new UdpClient(port); // bind port
+        }
+        catch (SocketException)
+        {
+            isConnected = false;
+        }
         //client.Connect();
         while (true)
         {
@@ -83,10 +94,11 @@ public class WebcamCameraControl : MonoBehaviour
                 //ry += ryOffset;
                 //rx += rxOffset;
                 //rz += rzOffset;
+                isConnected = true;
             }
             catch (Exception e)
             {
-                print(e.ToString());
+                Debug.Log(e.ToString());
             }
         }
     }
@@ -130,10 +142,10 @@ public class WebcamCameraControl : MonoBehaviour
     // 5. Update position of avatar
     void Update()
     {
-        if (Input.GetKeyDown(KeyCode.C))
-        {
-            SetZeroes();
-        }
+        //if (Input.GetKeyDown(KeyCode.C))
+        //{
+        //    SetZeroes();
+        //}
 
         smoothedPosition = Vector3.Lerp(smoothedPosition, new Vector3((float)pX * camScale, (float)pY * camScale, (float)pZ * camScale), lerpSpeed);
       
@@ -141,5 +153,16 @@ public class WebcamCameraControl : MonoBehaviour
        av.localRotation = Quaternion.Lerp(av.localRotation, rot, lerpSpeed);
       
        av.localPosition = smoothedPosition;
+
+       if (isConnected)
+       {
+           feedbackMessage.text = "AITrack connected on port " + port;
+           feedbackMessage.color = Color.green;
+       }
+       else
+       {
+           feedbackMessage.text = "AITrack not connected on port " + port;
+           feedbackMessage.color = Color.yellow;
+        }
     }
 }

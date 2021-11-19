@@ -26,8 +26,8 @@ public class PlayerLocomotionController : MonoBehaviour
     [SerializeField] private GameObject cameraOrigin;
     [SerializeField] private float cameraElevationAngle = 0.0f;
     [SerializeField] private float bodyAzimuthAngle = 0.0f;
-    [SerializeField] private float aimSpeedHorizontal = 30.0f;
-    [SerializeField] private float aimSpeedVertical = 20.0f;
+    [SerializeField] private float aimSpeedHorizontal = 40.0f;
+    [SerializeField] private float aimSpeedVertical = 40.0f;
 
     [Header("Headlook")]
     [SerializeField] private GameObject headTrackedCamera;
@@ -169,8 +169,9 @@ public class PlayerLocomotionController : MonoBehaviour
         else
         {
             Cursor.lockState = CursorLockMode.None;
-            cursorSprite.transform.position = Input.mousePosition;
         }
+
+        cursorSprite.transform.position = Input.mousePosition;
 
         if (Input.GetMouseButton(2))
         {
@@ -209,5 +210,18 @@ public class PlayerLocomotionController : MonoBehaviour
         }
 
         cameraElevationAngle = Mathf.Clamp(cameraElevationAngle, -89.99f, 89.99f);
+    }
+
+    public void SetLockedMouse(bool useFPS)
+    {
+        shooterStyleMouseAim = useFPS;
+    }
+
+
+    public void SetSensitivity(float speed)
+    {
+       // float speed = Mathf.Lerp(50, 350, amount01);
+        aimSpeedHorizontal = speed;
+        aimSpeedVertical = speed;
     }
 }
