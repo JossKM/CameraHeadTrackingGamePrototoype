@@ -9,11 +9,11 @@ public class PickupItem : MonoBehaviour
     [SerializeField] private AudioSource audio;
     [SerializeField] private Animator animator;
     [SerializeField] private AudioClip[] soundPool;
-    public UnityEvent<PickupItem> onPickupEvent;
+    public UnityEvent<PickupItem> OnPickupEvent;
     
     public void PickUp()
     {
-        onPickupEvent.Invoke(this);
+        OnPickupEvent.Invoke(this);
         audio.clip = soundPool[Random.Range(0, soundPool.Length)];
         audio.Play(0);
         Destroy(this, audio.clip.length + 3.0f);

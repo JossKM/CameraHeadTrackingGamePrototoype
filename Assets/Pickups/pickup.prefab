@@ -1159,7 +1159,8 @@ MonoBehaviour:
   - {fileID: 8300000, guid: 4528403fb8cbede478e61ddf91fe45cb, type: 3}
   - {fileID: 8300000, guid: ace5c2de501e9ab408810d9439b53853, type: 3}
   - {fileID: 8300000, guid: 90e0b2d768b3c93419df5884ae7eda5d, type: 3}
-  onPickupEvent:
+  - {fileID: 8300000, guid: 5cf39345a1380804c942b5a9b59b7d3e, type: 3}
+  OnPickupEvent:
     m_PersistentCalls:
       m_Calls: []
 --- !u!95 &18650548427524974

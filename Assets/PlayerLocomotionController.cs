@@ -60,9 +60,8 @@ public class PlayerLocomotionController : MonoBehaviour
          
         // rb = GetComponent<Rigidbody>();
         controller = GetComponent<CharacterController>();
-        cameraElevationAngle = cameraOrigin.transform.localEulerAngles.x;
+        //cameraElevationAngle = cameraOrigin.transform.localEulerAngles.x;
         bodyAzimuthAngle = transform.localEulerAngles.y;
-        Cursor.visible = false;
     }
 
   
@@ -154,6 +153,7 @@ public class PlayerLocomotionController : MonoBehaviour
     void MouseAim()
     {
         cursorSprite.sprite = cursorSpriteNormal;
+        Cursor.visible = false;
 
         //Aim
         float aimX = Input.GetAxis("Mouse X");
